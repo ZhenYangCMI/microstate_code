@@ -1,0 +1,60 @@
+clear
+clc
+
+session='session1';
+subList=load('/home/data/Projects/microstate/NKITRT_SubID.mat');
+subList=subList.SubID;
+covType='GSR'
+
+numSeed=4;
+winWidth=69; % in TR
+step=3; % in TR
+numVol=884;
+numWin=floor((numVol-winWidth)/step)+1;
+numSub=length(subList);
+numWinAllSub=numWin*numSub;
+analyDir=['/home/data/Projects/microstate/DPARSF_preprocessed/'];
+resultDir=['/home/data/Projects/microstate/DPARSF_preprocessed/results/645/all_10min/', covType, '/', session,'/'];
+figDir=['/home/data/Projects/microstate/DPARSF_preprocessed/fig/645/all_10min/', covType, '/', session,'/'];
+
+tmp=load([resultDir,'winFullCorLassoSeed_OptimalLambdaPerSub_645_',session,'win', num2str(winWidth), '_',covType,'.mat'])
+winFullCorLassoSeed=tmp.winFullCorLassoSeed;
+
+indx=load([resultDir, 'clustIndxNormWinAllSeeds_FullCorLasso_',session,'_10min.txt']);
+numClust=length(unique(indx));
+
+clustMeanFinal=zeros(numClust, numSeed);
+clustStdFinal=zeros(numClust, numSeed);
+for i=1:numClust
+    indxList=find(indx==i);
+    numWinInClust=length(indxList)
+numWinPerClust(i,1)=numWinInClust;
+    tmp=winFullCorLassoSeed(indxList, :);
+    clustMean=mean(tmp);
+clustMeanFinal(i,:)=clustMean;
+clustStd=std(tmp);
+clustStdFinal(i,:)=clustStd;
+end
+
+a=load('MyColormaps.mat')
+
+figure(1)
+imagesc(clustMeanFinal)
+caxis([0 1])
+colorbar
+set(gca, 'YTick', 1:5, 'XTick', 1:4)
+title('Mean')
+xlabel('Seeds')
+ylabel('States')
+colormap(a.mycmap)
+figure(2)
+imagesc(clustStdFinal)
+caxis([0.35 0.55])
+colorbar
+set(gca, 'YTick', 1:5, 'XTick', 1:4)
+title('Standard Deviation')
+xlabel('Seeds')
+ylabel('States')
+colormap(a.mycmap)
+saveas(figure(1), sprintf('/home/data/Projects/microstate/DPARSF_preprocessed/fig/645/all_10min/GSR/%s/clustMeanBtwSeed_%s.png', session, session))
+saveas(figure(2), sprintf('/home/data/Projects/microstate/DPARSF_preprocessed/fig/645/all_10min/GSR/%s/clustStdBtwSeed_%s.png', session, session))

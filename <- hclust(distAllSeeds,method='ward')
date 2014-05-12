@@ -1,0 +1,214 @@
+hclust                  package:stats                  R Documentation
+
+_H_i_e_r_a_r_c_h_i_c_a_l _C_l_u_s_t_e_r_i_n_g
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Hierarchical cluster analysis on a set of dissimilarities and
+     methods for analyzing it.
+
+_U_s_a_g_e:
+
+     hclust(d, method = "complete", members = NULL)
+     
+     ## S3 method for class 'hclust'
+     plot(x, labels = NULL, hang = 0.1,
+          axes = TRUE, frame.plot = FALSE, ann = TRUE,
+          main = "Cluster Dendrogram",
+          sub = NULL, xlab = NULL, ylab = "Height", ...)
+     
+     plclust(tree, hang = 0.1, unit = FALSE, level = FALSE, hmin = 0,
+             square = TRUE, labels = NULL, plot. = TRUE,
+             axes = TRUE, frame.plot = FALSE, ann = TRUE,
+             main = "", sub = NULL, xlab = NULL, ylab = "Height")
+     
+_A_r_g_u_m_e_n_t_s:
+
+       d: a dissimilarity structure as produced by ‘dist’.
+
+  method: the agglomeration method to be used. This should be (an
+          unambiguous abbreviation of) one of ‘"ward"’, ‘"single"’,
+          ‘"complete"’, ‘"average"’, ‘"mcquitty"’, ‘"median"’ or
+          ‘"centroid"’.
+
+ members: ‘NULL’ or a vector with length size of ‘d’. See the ‘Details’
+          section.
+
+  x,tree: an object of the type produced by ‘hclust’.
+
+    hang: The fraction of the plot height by which labels should hang
+          below the rest of the plot.  A negative value will cause the
+          labels to hang down from 0.
+
+  labels: A character vector of labels for the leaves of the tree. By
+          default the row names or row numbers of the original data are
+          used. If ‘labels = FALSE’ no labels at all are plotted.
+
+axes, frame.plot, ann: logical flags as in ‘plot.default’.
+
+main, sub, xlab, ylab: character strings for ‘title’.  ‘sub’ and ‘xlab’
+          have a non-NULL default when there's a ‘tree$call’.
+
+     ...: Further graphical arguments.
+
+    unit: logical.  If true, the splits are plotted at equally-spaced
+          heights rather than at the height in the object.
+
+    hmin: numeric.  All heights less than ‘hmin’ are regarded as being
+          ‘hmin’: this can be used to suppress detail at the bottom of
+          the tree.
+
+level, square, plot.: as yet unimplemented arguments of ‘plclust’ for
+          S-PLUS compatibility.
+
+_D_e_t_a_i_l_s:
+
+     This function performs a hierarchical cluster analysis using a set
+     of dissimilarities for the n objects being clustered.  Initially,
+     each object is assigned to its own cluster and then the algorithm
+     proceeds iteratively, at each stage joining the two most similar
+     clusters, continuing until there is just a single cluster.  At
+     each stage distances between clusters are recomputed by the
+     Lance-Williams dissimilarity update formula according to the
+     particular clustering method being used.
+
+     A number of different clustering methods are provided.  _Ward's_
+     minimum variance method aims at finding compact, spherical
+     clusters.  The _complete linkage_ method finds similar clusters.
+     The _single linkage_ method (which is closely related to the
+     minimal spanning tree) adopts a ‘friends of friends’ clustering
+     strategy.  The other methods can be regarded as aiming for
+     clusters with characteristics somewhere between the single and
+     complete link methods.  Note however, that methods ‘"median"’ and
+     ‘"centroid"’ are _not_ leading to a _monotone distance_ measure,
+     or equivalently the resulting dendrograms can have so called
+     _inversions_ (which are hard to interpret).
+
+     If ‘members != NULL’, then ‘d’ is taken to be a dissimilarity
+     matrix between clusters instead of dissimilarities between
+     singletons and ‘members’ gives the number of observations per
+     cluster.  This way the hierarchical cluster algorithm can be
+     ‘started in the middle of the dendrogram’, e.g., in order to
+     reconstruct the part of the tree above a cut (see examples).
+     Dissimilarities between clusters can be efficiently computed
+     (i.e., without ‘hclust’ itself) only for a limited number of
+     distance/linkage combinations, the simplest one being squared
+     Euclidean distance and centroid linkage.  In this case the
+     dissimilarities between the clusters are the squared Euclidean
+     distances between cluster means.
+
+     In hierarchical cluster displays, a decision is needed at each
+     merge to specify which subtree should go on the left and which on
+     the right.  Since, for n observations there are n-1 merges, there
+     are 2^{(n-1)} possible orderings for the leaves in a cluster tree,
+     or dendrogram.  The algorithm used in ‘hclust’ is to order the
+     subtree so that the tighter cluster is on the left (the last,
+     i.e., most recent, merge of the left subtree is at a lower value
+     than the last merge of the right subtree).  Single observations
+     are the tightest clusters possible, and merges involving two
+     observations place them in order by their observation sequence
+     number.
+
+_V_a_l_u_e:
+
+     An object of class *hclust* which describes the tree produced by
+     the clustering process.  The object is a list with components:
+
+   merge: an n-1 by 2 matrix.  Row i of ‘merge’ describes the merging
+          of clusters at step i of the clustering.  If an element j in
+          the row is negative, then observation -j was merged at this
+          stage.  If j is positive then the merge was with the cluster
+          formed at the (earlier) stage j of the algorithm.  Thus
+          negative entries in ‘merge’ indicate agglomerations of
+          singletons, and positive entries indicate agglomerations of
+          non-singletons.
+
+  height: a set of n-1 real values (non-decreasing for ultrametric
+          trees).  The clustering _height_: that is, the value of the
+          criterion associated with the clustering ‘method’ for the
+          particular agglomeration.
+
+   order: a vector giving the permutation of the original observations
+          suitable for plotting, in the sense that a cluster plot using
+          this ordering and matrix ‘merge’ will not have crossings of
+          the branches.
+
+  labels: labels for each of the objects being clustered.
+
+    call: the call which produced the result.
+
+  method: the cluster method that has been used.
+
+dist.method: the distance that has been used to create ‘d’ (only
+          returned if the distance object has a ‘"method"’ attribute).
+     There are ‘print’, ‘plot’ and ‘identify’ (see ‘identify.hclust’)
+     methods and the ‘rect.hclust()’ function for ‘hclust’ objects.
+     The ‘plclust()’ function is basically the same as the plot method,
+     ‘plot.hclust’, primarily for back compatibility with S-PLUS. Its
+     extra arguments are not yet implemented.
+
+_A_u_t_h_o_r(_s):
+
+     The ‘hclust’ function is based on Fortran code contributed to
+     STATLIB by F. Murtagh.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) _The New S
+     Language_.  Wadsworth & Brooks/Cole. (S version.)
+
+     Everitt, B. (1974).  _Cluster Analysis_.  London: Heinemann Educ.
+     Books.
+
+     Hartigan, J. A. (1975).  _Clustering Algorithms_.  New York:
+     Wiley.
+
+     Sneath, P. H. A. and R. R. Sokal (1973).  _Numerical Taxonomy_.
+     San Francisco: Freeman.
+
+     Anderberg, M. R. (1973).  _Cluster Analysis for Applications_.
+     Academic Press: New York.
+
+     Gordon, A. D. (1999).  _Classification_. Second Edition.  London:
+     Chapman and Hall / CRC
+
+     Murtagh, F. (1985).  “Multidimensional Clustering Algorithms”, in
+     _COMPSTAT Lectures 4_.  Wuerzburg: Physica-Verlag (for algorithmic
+     details of algorithms used).
+
+     McQuitty, L.L. (1966).  Similarity Analysis by Reciprocal Pairs
+     for Discrete and Continuous Data.  _Educational and Psychological
+     Measurement_, *26*, 825-831.
+
+_S_e_e _A_l_s_o:
+
+     ‘identify.hclust’, ‘rect.hclust’, ‘cutree’, ‘dendrogram’,
+     ‘kmeans’.
+
+     For the Lance-Williams formula and methods that apply it
+     generally, see ‘agnes’ from package ‘cluster’.
+
+_E_x_a_m_p_l_e_s:
+
+     require(graphics)
+     
+     hc <- hclust(dist(USArrests), "ave")
+     plot(hc)
+     plot(hc, hang = -1)
+     
+     ## Do the same with centroid clustering and squared Euclidean distance,
+     ## cut the tree into ten clusters and reconstruct the upper part of the
+     ## tree from the cluster centers.
+     hc <- hclust(dist(USArrests)^2, "cen")
+     memb <- cutree(hc, k = 10)
+     cent <- NULL
+     for(k in 1:10){
+       cent <- rbind(cent, colMeans(USArrests[memb == k, , drop = FALSE]))
+     }
+     hc1 <- hclust(dist(cent)^2, method = "cen", members = table(memb))
+     opar <- par(mfrow = c(1, 2))
+     plot(hc,  labels = FALSE, hang = -1, main = "Original Tree")
+     plot(hc1, labels = FALSE, hang = -1, main = "Re-start from 10 clusters")
+     par(opar)
+     
+

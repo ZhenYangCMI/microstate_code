@@ -1,0 +1,275 @@
+
+clear
+clc
+close all
+
+dataLength='all_10min';
+W_width = 136; %winSize can be 34 or 136
+% window sliding step in TRs
+step=3;
+% total number of time points
+N_vol=884;
+numSub=21;% subNum 20 for win34 and 21 for win136
+numSeed=4;
+% number of windows
+numWinPerSub=floor((N_vol-W_width)/step)+1;
+numWinPerSeed=numWinPerSub*numSub;
+numWinPerSes=numWinPerSeed*numSeed
+Time=ceil(W_width/2):step:(ceil(W_width/2)+step*(numWinPerSub-1));
+% seedPairs=seed1 and seed2; 1&3; 1&4; 2&3; 2&4; 3&4
+
+numROI=156;
+resultDir=['/Users/zhenyang/Desktop/Zhen/results/all_10min/2sesConcate/'];
+figDir=['/Users/zhenyang/Desktop/Zhen/figs/'];
+
+indx=load([resultDir,'clustIndxNormWinAllSeeds_FullCorLasso_2sessions_10min_',num2str(numSub),'sub_win',num2str(W_width),'.txt']);
+numState=length(unique(indx));
+disp ('Files loaded successfully.')
+
+sessionList={'session1', 'session2'};
+
+for p=1:length(sessionList)
+    session=char(sessionList{p})
+    
+    % separate the concatenated indx into 2 sessions
+    if strcmp(session, 'session1')
+        indxRecode=indx(1:numWinPerSes,1);
+    elseif strcmp(session, 'session2')
+        indxRecode=indx(numWinPerSes+1:end,1);
+    end
+    
+    
+    %% compute for each subject and each seed: 1.the totoal number of
+    % transitions; 2. the frquency of each state
+    transitions=zeros(numSub,numSeed);
+    stateFreq=zeros(numState, numSeed, numSub);
+    
+    for i=1:numSeed
+        indxRecodeSeed=indxRecode((1+numWinPerSeed*(i-1)):numWinPerSeed*i);
+        for j=1:numSub
+            indxRecodeSeedSub=indxRecodeSeed((1+numWinPerSub*(j-1)):numWinPerSub*j);
+            m=0;
+            if strcmp(session,'session1')
+                probTM(1:5)=0;
+            else
+                probTM(1:6)=0;
+            end
+            probTM(indxRecodeSeedSub(1))=probTM(indxRecodeSeedSub(1))+1;
+            for k=1:numWinPerSub
+                if k+1<=numWinPerSub
+                    if indxRecodeSeedSub(k+1)~=indxRecodeSeedSub(k)
+                        m=m+1;
+                        probTM(indxRecodeSeedSub(k+1))=probTM(indxRecodeSeedSub(k+1))+1;
+                    end
+                else
+                    disp('k+1 exceeds the numWinPerSub.')
+                end
+            end
+            transitions(j,i)=m;
+            for n=1:numState
+                stateFreq(n,i,j)=probTM(n);
+            end
+        end
+    end
+    save([resultDir, sprintf('transitions_%s_win%d_%dsub.mat', session,W_width,numSub)], 'transitions')
+    save([resultDir, sprintf('stateFreq_%s_win%d_%dsub.mat', session,W_width,numSub)], 'stateFreq')
+    
+    
+    %% compute the %time spent in each state for each seed and each sub
+    subSeedPrct=zeros(numState, numSeed, numSub);
+    for n = 1:numState
+        for i = 1:numSeed
+            for j = 1:numSub
+                begin_ndx=(i-1)*numSub*numWinPerSub+(j-1)*numWinPerSub+1;
+                end_ndx=begin_ndx+numWinPerSub-1;
+                subSeed(n,i,j)=sum(indxRecode(begin_ndx:end_ndx)==n);
+                subSeedPrct(n,i,j)=sum(indxRecode(begin_ndx:end_ndx)==n)/numWinPerSub;
+                %disp(sprintf('begin %d, end %d, val %f',begin_ndx,end_ndx,subSeedPrct(i,j,k)));
+            end
+        end
+    end
+    save([resultDir, sprintf('subSeedPrct_%s_win%d_%dsub.mat', session,W_width,numSub)], 'subSeedPrct')
+    
+    
+    
+    %% compute the microstate duration in unit of windows
+    duration=zeros(numState, numSeed, numSub);
+    for n = 1:numState
+        for i = 1:numSeed
+            for j = 1:numSub
+                if stateFreq(n,i,j)~=0;
+                    duration(n,i,j)=subSeedPrct(n,i,j)./stateFreq(n,i,j)
+                else
+                    duration(n,i,j)=0;
+                end
+            end
+        end
+    end
+    save([resultDir, sprintf('duration_%s_win%d_%dsub.mat', session,W_width,numSub)], 'duration')
+    
+    
+    
+    %% compute the transition matrix of Markov Chain
+    TM=zeros(numState,numState,numSub,numSeed);
+    
+    for i=1:numSeed
+        indxRecodeSeed=indxRecode((1+numWinPerSeed*(i-1)):numWinPerSeed*i);
+        for j=1:numSub
+            indxRecodeSeedSub=indxRecodeSeed((1+numWinPerSub*(j-1)):numWinPerSub*j);
+            markovChain=indxRecodeSeedSub;
+            Norder=1;
+            [ transitionMatrix columnStates ] = getTransitionMatrix(markovChain,Norder);
+            maxIndx=5;
+            if max(indxRecodeSeedSub)==maxIndx
+                TM(:,:,j,i)=transitionMatrix'; %the row represent state at time t and each column the time t+1
+            elseif max(indxRecodeSeedSub)==maxIndx-1
+                x=zeros(1,maxIndx-1);
+                y=zeros(maxIndx,1);
+                transitionMatrix=vertcat(transitionMatrix,x);
+                transitionMatrix=horzcat(transitionMatrix,y);
+                TM(:,:,j,i)=transitionMatrix';
+            elseif max(indxRecodeSeedSub)==maxIndx-2
+                x=zeros(2,maxIndx-2);
+                y=zeros(maxIndx,2);
+                transitionMatrix=vertcat(transitionMatrix,x);
+                transitionMatrix=horzcat(transitionMatrix,y);
+                TM(:,:,j,i)=transitionMatrix';
+            elseif max(indxRecodeSeedSub)==maxIndx-3
+                x=zeros(3,maxIndx-3);
+                y=zeros(maxIndx,3);
+                transitionMatrix=vertcat(transitionMatrix,x);
+                transitionMatrix=horzcat(transitionMatrix,y);
+                TM(:,:,j,i)=transitionMatrix';
+            elseif max(indxRecodeSeedSub)==maxIndx-4
+                x=zeros(4,maxIndx-4);
+                y=zeros(maxIndx,4);
+                transitionMatrix=vertcat(transitionMatrix,x);
+                transitionMatrix=horzcat(transitionMatrix,y);
+                TM(:,:,j,i)=transitionMatrix';
+                
+            end
+        end
+    end
+    
+    % compute the probablity of the transition matrix
+    probTM=zeros(numState,numState,numSub,numSeed);
+    for i=1:numSeed
+        for j=1:numSub
+            rowSumTM= sum(TM(:,:,j,i)')';
+            probTM(:,:,j,i)=TM(:,:,j,i)./repmat(rowSumTM,1,maxIndx);
+            probTM(isnan(probTM))=0;
+        end
+    end
+    
+    meanTMSeed=zeros(numState,numState,numSeed);
+    for i=1:numSeed
+        TMSeed=squeeze(probTM(:,:,:,i));
+        TMSeed2D=reshape(TMSeed,[],numSub)';
+        tmp=mean(TMSeed2D);
+        meanProbTM(:,:,i)=reshape(tmp,numState,numState);
+    end
+    
+    meanProbTMDifState=zeros(numState,numState,numSeed);
+    for i=1:numSeed
+        data=squeeze(meanProbTM(:,:,i));
+        % remove the probability of entering or exiting its own state
+        for j=1:numState
+            for k=1:numState
+                if j==k
+                    data(j,k)=0;
+                end
+            end
+        end
+        for j=1:numState
+            for k=1:numState
+                if j~=k
+                    meanProbTMDifState(j,k,i)=data(j,k)/sum(data(j,:));
+                end
+            end
+        end
+    end
+    meanProbTMDifState
+    
+    save([resultDir, 'meanProbTM_', session, '.mat'], 'meanProbTM')
+    save([resultDir, 'probTM_', session, '.mat'], 'probTM')
+    save([resultDir, 'meanProbTMDifState_', session, '.mat'], 'meanProbTMDifState')
+    
+    %        for i=1:numSeed
+    %         [Eig_Vector,Eig_value] = eig(meanTM(:,:,i));
+    %        end
+    %         stat_vector=Eig_Vector(:,1)';
+    %
+    %         figure(17+4*(i-1))
+    %         plot(stat_vector,'-or','Markersize', 10)
+    %         ylabel('Stationary Probability')
+    %         xlabel('States')
+    %         title('Steady-state Behavior')
+    
+    
+    
+    %% comput the % overlap between each pair of seeds
+    seedPairList=[1, 2; 1, 3; 1, 4; 2, 3; 2,4; 3, 4];
+    numSeedPair=size(seedPairList,1);
+    TCPrctOverlapEachState=zeros(numState, numSeedPair, numSub);
+    
+    for i=1:numSeedPair
+        seedPair=seedPairList(i,:);
+        m=seedPair(1);
+        n=seedPair(2);
+        seed1=indxRecode((1+numWinPerSeed*(m-1)):numWinPerSeed*m);
+        seed2=indxRecode((1+numWinPerSeed*(n-1)):numWinPerSeed*n);
+        for j=1:numSub
+            seedSub1=seed1((1+numWinPerSub*(j-1)):numWinPerSub*j);
+            seedSub2=seed2((1+numWinPerSub*(j-1)):numWinPerSub*j);
+            for k=1:numState
+                t=0;
+                tmp1=find(seedSub1==k);
+                tmp2=find(seedSub2==k);
+                if isempty(tmp1);
+                    t=0;
+                else
+                    for p=1:length(tmp1)
+                        if ismember(tmp1(p),tmp2(:))
+                            tmp2Overlap=tmp2(find(tmp2==tmp1(p)));
+                            disp(['seed', num2str(m), 'indx ', num2str(tmp1(p)) ' overlapped with seed', num2str(n), 'indx ', num2str(tmp2Overlap)])
+                            t=t+1;
+                        end
+                    end
+                end
+                TCPrctOverlapEachState(k,i,j)=t/numWinPerSub;
+            end
+        end
+    end
+    TCPrctOverlapStateSum=squeeze(sum(TCPrctOverlapEachState))';
+    save([resultDir, 'TCPrctOverlapEachState_', session, '.mat'], 'TCPrctOverlapEachState')
+    save([resultDir, 'TCPrctOverlapStateSum_', session, '.mat'], 'TCPrctOverlapStateSum')
+    
+    
+    
+    %% compute the % time 4 seeds were on 1, 2, 3, 4 states separately
+    possibNumStatesAtATime=4; % 4 possibilities
+    numUniqStat4Seeds=zeros(numWinPerSub, numSub);
+    prctDifNumStates=zeros(numSub, possibNumStatesAtATime);
+    for j=1:numSub
+        indxSeed1=indxRecode((1+numWinPerSub*(j-1)):numWinPerSub*j);
+        (1+numWinPerSub*(j-1))
+        numWinPerSub*j
+        indxSeed2=indxRecode((1+numWinPerSub*(j-1)+numWinPerSeed):numWinPerSub*j+numWinPerSeed);
+        (1+numWinPerSub*(j-1)+numWinPerSeed)
+        numWinPerSub*j+numWinPerSeed
+        indxSeed3=indxRecode((1+numWinPerSub*(j-1)+numWinPerSeed*2):numWinPerSub*j+numWinPerSeed*2);
+        indxSeed4=indxRecode((1+numWinPerSub*(j-1)+numWinPerSeed*3):numWinPerSub*j+numWinPerSeed*3);
+        indxAllSeeds=zeros(numWinPerSub, numSeed);
+        for i=1:numWinPerSub
+            indxAllSeeds(i, :)=[indxSeed1(i), indxSeed2(i), indxSeed3(i), indxSeed4(i)];
+            numUniqStat4Seeds(i,j)=length(unique(indxAllSeeds(i,:)));
+        end
+        for k=1:possibNumStatesAtATime
+            prctDifNumStates(j,k)=length(find(numUniqStat4Seeds(:,j)==k))/numWinPerSub;
+        end
+    end
+    save([resultDir, 'prctDifNumStates_', session, '.mat'], 'prctDifNumStates')
+    
+end
+
+

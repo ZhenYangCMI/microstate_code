@@ -1,0 +1,4 @@
+ROI Center(mm)=(-2, -36, 35); Radius=3.00 mm.
+ROI Center(mm)=(-2, -47, 58); Radius=3.00 mm.
+ROI Center(mm)=(-2, -64, 45); Radius=3.00 mm.
+ROI Center(mm)=(-1, -78, 43); Radius=3.00 mm.

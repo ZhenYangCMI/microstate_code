@@ -1,0 +1,47 @@
+%This script compute thess average sateionary FC across all
+% subjects
+clear
+clc
+close all
+
+
+sessionList={'session1','session2'};
+subList=load('/home/data/Projects/microstate/NKITRT_SubID.mat');
+subList=subList.SubID;
+numSeed=4;
+numROI=156;
+
+
+%sessionList={'session1'};
+% subList={'0021002'};
+
+numSub=length(subList);
+numSession=length(sessionList);
+analyDir=['/home/data/Projects/microstate/DPARSF_preprocessed/'];
+figDir=[analyDir, 'fig/645/all_10min/seedTC/']
+
+for j=1
+    session=char(sessionList{j});
+    resultDir=[analyDir,'results/645/all_10min/',session,'/'];
+    for k=3
+        sub=subList{k};
+        disp (['Working on sub ', char(sub),' ......'])
+        subDir=[analyDir,'data/645/all_10min/',session,'/',char(sub)];
+        seedROISignals = load([subDir,'/ROISignals_seedROISignal.mat']);
+        TC1=seedROISignals.ROISignals;
+        for i=1:numSeed
+            figure(1)
+            subplot(2,2,i)
+            plot(TC1(:,i))
+            xlabel('Time')
+            ylabel('Intensity')
+            title('Seed TC')
+            hand_t=title(strTitle);
+            v=get(hand_t
+        end
+        saveas(figure(1),[figDir, 'seedTC_',session,'_',sub,'.png'])
+    end
+end
+
+
+

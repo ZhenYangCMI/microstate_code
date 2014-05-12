@@ -1,0 +1,396 @@
+%%%%
+
+%%%Get the Surface maps
+
+ 
+
+Prefix='';
+
+PicturePrefix='';
+
+ 
+
+NMin=0;PMin=0.5;
+
+NMax=0     ;PMax=1;
+
+ClusterSize=0;
+
+SurfaceMapSuffix='_SurfaceMap.jpg';
+
+ 
+
+ConnectivityCriterion=18;
+
+[BrainNetViewerPath, fileN, extn] = fileparts(which('BrainNet.m'));
+
+SurfFileName=[BrainNetViewerPath,filesep,'Data',filesep,'SurfTemplate',filesep,'BrainMesh_ICBM152.nv'];
+
+viewtype='MediumView';
+
+ColorMap=jet(100);
+
+ 
+
+ 
+
+ 
+
+GroupAnalysisOutDir_GRFCorrected = '/home/data/HeadMotion_YCG/YAN_Work/TransformationProject/TRT_Analyses/NYUTRT/StatisticalAnalysis/ICC_1_23_WholeBrain';
+
+GroupAnalysisOutDir_SurfaceMap = '/home/data/HeadMotion_YCG/YAN_Work/TransformationProject/TRT_Analyses/NYUTRT/StatisticalAnalysis/ICC_1_23_WholeBrain/SurfaceMap';
+
+ 
+
+%GroupAnalysisOutDir_GRFCorrected = '/home/data/HeadMotion_YCG/YAN_Work/TransformationProject/StatisticalAnalysis/Sub828_Model2_GreyMatterMask_GRFCorrected';
+
+%GroupAnalysisOutDir_SurfaceMap = '/home/data/HeadMotion_YCG/YAN_Work/TransformationProject/StatisticalAnalysis/Sub828_Model2_GreyMatterMask_GRFCorrected/SurfaceMap_Corrected';
+
+ 
+
+ 
+
+ConditionSuffix='';
+
+ConditionList_ALFFfALFFSCA={'FunImgARC','FunImgARglobalC','FunImgARgraymatterC'};
+
+ 
+
+ConditionList_ReHo={'FunImgARCW','FunImgARglobalCW','FunImgARgraymatterCW'};
+
+ConditionList_DC={'FunImgARCW','FunImgARglobalCW','FunImgARgraymatterCW'};
+
+ConditionList_VMHC={'FunImgARCWSsym','FunImgARglobalCWSsym','FunImgARgraymatterCWSsym'};
+
+ 
+
+MeasureDirSet = {'ALFF_Detrend_BAND_01_1','fALFF_Detrend_BAND_01_1','ReHo_Detrend_Filter01_1','VMHC_NormalizeSmoothed4point5First_SYM_Detrend_Filter01_1','AndrewsHannaROI_zFCMap_ROIInMNI_FCInOriginalSpace_Detrend_Filter01_1','DegreeCentrality_Detrend_Filter01_1'};
+
+ 
+
+MeasureSet = {'ALFF','fALFF','ReHo','VMHC','PCCFC','DC'};
+
+ 
+
+TransformSet = {'0_Raw_','1_MeanDivide_','2_MeanSubtract_','3_MedianDivide_','4_MedianSubtract_','5_z_','6_IQR_','7_QN_','8_Rank_','9_GFN_'};
+
+ 
+
+ 
+
+for iMeasure=1:length(MeasureSet)
+
+    
+
+    if strcmpi(MeasureSet{iMeasure},'ALFF') || strcmpi(MeasureSet{iMeasure},'fALFF') || strcmpi(MeasureSet{iMeasure},'PCCFC')
+
+        ConditionList = ConditionList_ALFFfALFFSCA;
+
+    elseif strcmpi(MeasureSet{iMeasure},'ReHo')
+
+        ConditionList = ConditionList_ReHo;
+
+    elseif strcmpi(MeasureSet{iMeasure},'DC')
+
+        ConditionList = ConditionList_DC;
+
+    elseif strcmpi(MeasureSet{iMeasure},'VMHC')
+
+        ConditionList = ConditionList_VMHC;
+
+    end
+
+    
+
+    for iCondition=1:length(ConditionList)
+
+ 
+
+        for iTransform=1:length(TransformSet)
+
+             
+
+            %%%%%%%
+
+            
+
+            mkdir([GroupAnalysisOutDir_SurfaceMap,filesep,MeasureSet{iMeasure},filesep,ConditionList{iCondition},ConditionSuffix,filesep,TransformSet{iTransform}]);
+
+            
+
+            DirImg = dir([GroupAnalysisOutDir_GRFCorrected,filesep,MeasureSet{iMeasure},filesep,ConditionList{iCondition},ConditionSuffix,filesep,TransformSet{iTransform},filesep,Prefix,'*.nii']);
+
+            InputName = [GroupAnalysisOutDir_GRFCorrected,filesep,MeasureSet{iMeasure},filesep,ConditionList{iCondition},ConditionSuffix,filesep,TransformSet{iTransform},filesep,DirImg(1).name];
+
+            OutputName = [GroupAnalysisOutDir_SurfaceMap,filesep,MeasureSet{iMeasure},filesep,ConditionList{iCondition},ConditionSuffix,filesep,TransformSet{iTransform},filesep,DirImg(1).name(1:end-4),SurfaceMapSuffix];
+
+            H_BrainNet = rest_CallBrainNetViewer(InputName,NMin,PMin,ClusterSize,ConnectivityCriterion,SurfFileName,viewtype,ColorMap,NMax,PMax);
+
+            eval(['print -r300 -djpeg -noui ''',OutputName,''';']);
+
+            
+
+        end
+
+    end
+
+end
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+%%%%%%%
+
+% Auto Draw on a panel
+
+ 
+
+LeftMaskFile = '/home/data/HeadMotion_YCG/YAN_Scripts/HeadMotion/Parts/Left2FigureMask_BrainNetViewerMediumView.jpg';
+
+ 
+
+DataUpDir = '/home/data/HeadMotion_YCG/YAN_Work/TransformationProject/TRT_Analyses/NYUTRT/StatisticalAnalysis/ICC_1_23_WholeBrain/SurfaceMap';
+
+ 
+
+OutputUpDir = '/home/data/HeadMotion_YCG/YAN_Work/TransformationProject/TRT_Analyses/NYUTRT/StatisticalAnalysis/ICC_1_23_WholeBrain/SurfaceMap_Combined';
+
+ 
+
+ 
+
+ 
+
+SurfaceMapSuffix='_SurfaceMap.jpg';
+
+ 
+
+ 
+
+MeasureSet = {'ALFF','fALFF','ReHo','VMHC','PCCFC','DC'};
+
+ 
+
+%TransformSet = {'0_Raw_','1_MeanDivide_','2_MeanSubtract_','3_MedianDivide_','4_MedianSubtract_','5_z_','6_IQR_','7_QN_','8_Rank_'};
+
+%TransformSet = {'0_Raw_','1_MeanDivide_','2_MeanSubtract_','5_z_','6_IQR_','7_QN_','8_Rank_','9_GFN_'};
+
+TransformSet = {'0_Raw_','GSR_Raw','1_MeanDivide_','2_MeanSubtract_','5_z_','6_IQR_','7_QN_','8_Rank_','9_GFN_'};
+
+ 
+
+ 
+
+%ContrastSet = {'T1','F_ForContrast','T4','T2','T3'};
+
+ContrastSet = {''};
+
+ 
+
+ConditionSuffix='';
+
+ConditionList_ALFFfALFFSCA={'FunImgARC','FunImgARglobalC','FunImgARgraymatterC'};
+
+ 
+
+ConditionList_ReHo={'FunImgARCW','FunImgARglobalCW','FunImgARgraymatterCW'};
+
+ConditionList_DC={'FunImgARCW','FunImgARglobalCW','FunImgARgraymatterCW'};
+
+ConditionList_VMHC={'FunImgARCWSsym','FunImgARglobalCWSsym','FunImgARgraymatterCWSsym'};
+
+ 
+
+ 
+
+UnitRow = 2088;
+
+UnitColumn = 1531;
+
+BackGroundColor = uint8([255*ones(1,1,3)]);
+
+%imdata_All = 255*ones(UnitRow*length(MeasureSet),UnitColumn*length(ConditionList),3);
+
+imdata_All = repmat(BackGroundColor,[UnitRow*length(TransformSet),UnitColumn*length(ContrastSet),1]);
+
+LeftMask = imread(LeftMaskFile);
+
+ 
+
+ 
+
+ 
+
+for iMeasure=1:length(MeasureSet)
+
+    
+
+    if strcmpi(MeasureSet{iMeasure},'ALFF') || strcmpi(MeasureSet{iMeasure},'fALFF') || strcmpi(MeasureSet{iMeasure},'PCCFC')
+
+        ConditionList = ConditionList_ALFFfALFFSCA;
+
+    elseif strcmpi(MeasureSet{iMeasure},'ReHo')
+
+        ConditionList = ConditionList_ReHo;
+
+    elseif strcmpi(MeasureSet{iMeasure},'DC')
+
+        ConditionList = ConditionList_DC;
+
+    elseif strcmpi(MeasureSet{iMeasure},'VMHC')
+
+        ConditionList = ConditionList_VMHC;
+
+    end
+
+    
+
+    
+
+    
+
+    mkdir([OutputUpDir]);
+
+    
+
+    
+
+    for iTransform=1:length(TransformSet)
+
+        
+
+        if strcmpi(TransformSet{iTransform},'GSR_Raw')
+
+            cd([DataUpDir,filesep,MeasureSet{iMeasure},filesep,ConditionList{2},ConditionSuffix,filesep,'0_Raw_']);
+
+        else
+
+            cd([DataUpDir,filesep,MeasureSet{iMeasure},filesep,ConditionList{1},ConditionSuffix,filesep,TransformSet{iTransform}]);
+
+        end
+
+        
+
+        %
+
+        %         for iContrast=1:length(ContrastSet)
+
+        %             DirJPG = dir(['*',ContrastSet{iContrast},SurfaceMapSuffix]);
+
+        %             if ~isempty(DirJPG)
+
+        %                 imdata = imread(DirJPG(end).name); %%%FumImgAR will be put last since Scrub.. < Surface..
+
+        %                 imdata(LeftMask==255) = 255;
+
+        %                 imdata = imdata(1:end-80,120:1650,:);
+
+        %                 imdata_All (((iTransform-1)*UnitRow + 1):iTransform*UnitRow,((iContrast-1)*UnitColumn + 1):iContrast*UnitColumn,:) = imdata;
+
+        %             end
+
+        %         end
+
+        %
+
+        %
+
+        
+
+        for iContrast=1:length(ContrastSet)
+
+            DirJPG = dir(['*',ContrastSet{iContrast},SurfaceMapSuffix]);
+
+            if ~isempty(DirJPG)
+
+                imdata = imread(DirJPG(end).name); %%%FumImgAR will be put last since Scrub.. < Surface..
+
+                imdata(LeftMask==255) = 255;
+
+                imdata = imdata(1:end-80,120:1650,:);
+
+                imdata_All (((iTransform-1)*UnitRow + 1):iTransform*UnitRow,((iMeasure-1)*UnitColumn + 1):iMeasure*UnitColumn,:) = imdata;
+
+            end
+
+        end
+
+        
+
+        
+
+        
+
+        disp(iMeasure)
+
+    end
+
+    
+
+    %     figure
+
+    %     image(imdata_All)
+
+    %     axis off          % Remove axis ticks and numbers
+
+    %     axis image        % Set aspect ratio to obtain square pixels
+
+    %
+
+    %     OutJPGName=[OutputUpDir,filesep,MeasureSet{iMeasure},'All.jpg'];
+
+    %     eval(['print -r300 -djpeg -noui ''',OutJPGName,''';']);
+
+    
+
+    
+
+end
+
+ 
+
+ 
+
+figure
+
+image(imdata_All)
+
+axis off          % Remove axis ticks and numbers
+
+axis image        % Set aspect ratio to obtain square pixels
+
+ 
+
+OutJPGName=[OutputUpDir,filesep,'All.jpg'];
+
+eval(['print -r300 -djpeg -noui ''',OutJPGName,''';']);
+
+ 
+
+ 
+

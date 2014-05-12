@@ -1,0 +1,13 @@
+#!/bin/bash
+
+subList=$( ls /home2/data/Projects/microstate/TestGIFT/RfMRI_mx_645/session1/FunImg )
+session='session2'
+#sub=0021002
+for sub in $subList; do
+	echo $session
+	echo ${sub}
+	cmd="3dcalc -a /home2/data/Projects/microstate/TestGIFT/RfMRI_mx_645/${session}/FunImg/${sub}/BOLDrest.nii.gz[0..450] -expr 'a' -prefix /home2/data/Projects/microstate/TestGIFT/RfMRI_mx_645/${session}/FunImg/${sub}/BOLDrest5min.nii.gz"
+	echo $cmd
+	eval $cmd
+	#exit
+done

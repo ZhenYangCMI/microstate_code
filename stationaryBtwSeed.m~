@@ -1,0 +1,48 @@
+clear
+clc
+close all
+session='session2';
+subList=load('/home/data/Projects/microstate/NKITRT_SubID.mat');
+subList=subList.SubID;
+numSub=length(subList)
+numSeed=4;
+covType='GSR'
+analyDir=['/home/data/Projects/microstate/DPARSF_preprocessed/'];
+corAllSub=zeros(numSeed, numSeed, numSub);
+for k=1:numSub
+    sub=subList{k};
+    disp (['Working on sub ', char(sub),' ......'])
+    subDir=[analyDir,'data/645/all_10min/',covType, '/',session,'/',char(sub)];
+    seedROISignals = load([subDir,'/ROISignals_seedROISignal.mat']);
+    TC=seedROISignals.ROISignals;
+    numSeed1=size(TC,2);
+    if numSeed1~=numSeed
+        disp('numSeed dosen"t match')
+    end
+    corAllSub(:, :, k)=corrcoef(TC);
+end
+
+corAllSubReshape=reshape(corAllSub, [], numSub);
+meanFCSeed=mean(corAllSubReshape, 2);
+meanFCSeedReshape=reshape(meanFCSeed, numSeed, numSeed);
+
+corNoDuplicate=[squeeze(corAllSub(1,2,:)) squeeze(corAllSub(1,3,:)) squeeze(corAllSub(1,4,:)) squeeze(corAllSub(2,3,:)) squeeze(corAllSub(2,4,:)) squeeze(corAllSub(3,4,:))];
+[h, p]=ttest(corNoDuplicate)
+[pID,pN] = FDR(p,0.05)
+
+% a=[0.400000005960464 0.800000011920929 1;0.800000011920929 1 0.800000011920929;1 1 0.800000011920929;1 0.800000011920929 0.800000011920929;1 0.400000005960464 0.400000005960464];
+% a=[0 1 1;0.800000011920929 1 0.800000011920929;1 1 0.400000005960464;1 0.694117665290833 0.39215686917305;1 0.400000005960464 0.400000005960464];
+%  cmap = colorRamp(a, 30)
+figure(1)
+imagesc(meanFCSeedReshape)
+caxis([-0.1 0.4])
+
+set(gca, 'YTick', [], 'XTick', [])
+% title('Mean')
+% xlabel('Seeds')
+% ylabel('Seeds')
+%colormap(cmap)
+colormap(hot)
+hcb=colorbar
+set(hcb,'YTick',[-0.1, 0, 0.1, 0.2, 0.3, 0.4])
+saveas(figure(1), sprintf('/home/data/Projects/microstate/DPARSF_preprocessed/fig/645/all_10min/GSR/%s/stationaryFCSeed_%s.png', session, session))
